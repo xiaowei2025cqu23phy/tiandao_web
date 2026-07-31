@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, User, Sparkles } from 'lucide-react';
+import { Calendar, Clock, User, MapPin, Sparkles } from 'lucide-react';
 import { calculateBazi, analyzeWuxing, dayMasterComment, wuxingLabel } from '../../data/bazi';
 import type { BaziResult, WuxingAnalysis } from '../../types';
 
 export default function BaziCalculator() {
   const [birthDate, setBirthDate] = useState('');
   const [birthHour, setBirthHour] = useState(12);
+  const [birthMinute, setBirthMinute] = useState(0);
+  const [longitude, setLongitude] = useState(120);
   const [gender, setGender] = useState('男');
   const [result, setResult] = useState<BaziResult | null>(null);
   const [wuxing, setWuxing] = useState<WuxingAnalysis | null>(null);
@@ -16,7 +18,7 @@ export default function BaziCalculator() {
     const [y, m, d] = birthDate.split('-').map(Number);
     if (!y || !m || !d) return;
 
-    const bazi = calculateBazi(y, m, d, birthHour, gender);
+    const bazi = calculateBazi(y, m, d, birthHour, gender, { minute: birthMinute, longitude });
     const wx = analyzeWuxing(bazi);
     setResult(bazi);
     setWuxing(wx);
@@ -110,6 +112,44 @@ export default function BaziCalculator() {
           </div>
         </div>
 
+        {/* Minute + Longitude row */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="flex items-center gap-2 text-amber-300 text-sm mb-2">
+              <Clock size={16} />
+              出生分钟
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={59}
+              value={birthMinute}
+              onChange={e => setBirthMinute(Math.max(0, Math.min(59, Number(e.target.value) || 0)))}
+              className="w-full px-4 py-2.5 bg-ink-black/60 border border-imperial-red/20 rounded-xl text-amber-200 text-sm focus:outline-none focus:border-imperial-red/50 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-amber-300 text-sm mb-2">
+              <MapPin size={16} />
+              出生地经度（东经）
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              min={-180}
+              max={180}
+              value={longitude}
+              onChange={e => {
+                const v = Number(e.target.value);
+                if (!Number.isNaN(v)) setLongitude(Math.max(-180, Math.min(180, v)));
+              }}
+              className="w-full px-4 py-2.5 bg-ink-black/60 border border-imperial-red/20 rounded-xl text-amber-200 text-sm focus:outline-none focus:border-imperial-red/50 transition-colors"
+              placeholder="120"
+            />
+            <p className="text-amber-400/30 text-[11px] mt-1">默认 120°（东八区标准时），如北京 116.4°</p>
+          </div>
+        </div>
+
         <motion.button
           className="w-full py-3 rounded-xl bg-gradient-to-r from-imperial-red/80 to-imperial-red/60 text-amber-100 font-medium text-sm hover:from-imperial-red hover:to-imperial-red/80 transition-all border border-imperial-red/30 disabled:opacity-40 disabled:cursor-not-allowed"
           onClick={handleCalculate}
@@ -134,11 +174,11 @@ export default function BaziCalculator() {
             <h3 className="font-calligraphy text-xl text-amber-100 text-center mb-5">四柱八字</h3>
             <div className="grid grid-cols-4 gap-4">
               {[
-                { label: '年柱', pillar: result.year },
-                { label: '月柱', pillar: result.month },
-                { label: '日柱', pillar: result.day },
-                { label: '时柱', pillar: result.hour },
-              ].map(({ label, pillar }) => (
+                { label: '年柱', pillar: result.year, tenGod: result.tenGods[0] },
+                { label: '月柱', pillar: result.month, tenGod: result.tenGods[1] },
+                { label: '日柱', pillar: result.day, tenGod: result.tenGods[2] },
+                { label: '时柱', pillar: result.hour, tenGod: result.tenGods[3] },
+              ].map(({ label, pillar, tenGod }) => (
                 <motion.div
                   key={label}
                   className="p-3 rounded-xl bg-ink-black/60 border border-imperial-red/10 text-center"
@@ -150,12 +190,18 @@ export default function BaziCalculator() {
                   <p className="text-xl font-calligraphy text-amber-100 mt-1">
                     {pillar.gan}{pillar.zhi}
                   </p>
+                  <p className="text-amber-400/40 text-[11px] mt-1">{tenGod}</p>
                 </motion.div>
               ))}
             </div>
-            <p className="text-amber-400/30 text-xs text-center mt-3">
-              {result.birthDate} · {result.gender} · {result.lunarDate}
-            </p>
+            <div className="text-amber-400/40 text-xs text-center mt-3 space-y-1">
+              <p>
+                {result.birthDate} · {result.gender} · {result.lunarDate}
+              </p>
+              <p className="text-amber-400/50">
+                真太阳时 {result.solarTime.label}（{result.solarTime.note}）
+              </p>
+            </div>
           </div>
 
           {/* Wuxing Analysis */}
@@ -197,6 +243,80 @@ export default function BaziCalculator() {
               </p>
             </div>
           )}
+
+          {/* Da Yun */}
+          <div className="p-6 rounded-2xl bg-gradient-to-b from-imperial-red/[0.05] to-ink-black/50 border border-imperial-red/20">
+            <h3 className="font-calligraphy text-xl text-amber-100 text-center mb-2">大运排盘</h3>
+            <p className="text-amber-400/50 text-xs text-center mb-4">
+              {result.daYun.qiYun.note}
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-amber-400/40 text-xs">
+                    <th className="py-2 font-normal text-left">大运</th>
+                    <th className="py-2 font-normal text-left">十神</th>
+                    <th className="py-2 font-normal text-right">年龄</th>
+                    <th className="py-2 font-normal text-right">年份</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.daYun.steps.map(step => (
+                    <tr
+                      key={`${step.gan}${step.zhi}`}
+                      className={`border-t border-imperial-red/10 ${
+                        step.isCurrent ? 'bg-imperial-red/10' : ''
+                      }`}
+                    >
+                      <td className="py-2 text-amber-100 font-calligraphy text-lg">
+                        {step.gan}{step.zhi}
+                        {step.isCurrent && (
+                          <span className="ml-2 text-[10px] text-amber-400/70 bg-amber-400/10 border border-amber-400/20 rounded-full px-1.5 py-0.5">
+                            当前
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2 text-amber-400/60">{step.tenGod}</td>
+                      <td className="py-2 text-amber-400/60 text-right">{step.startAge}-{step.endAge} 岁</td>
+                      <td className="py-2 text-amber-400/60 text-right">{step.startYear}-{step.endYear}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Liu Nian */}
+          <div className="p-6 rounded-2xl bg-gradient-to-b from-imperial-red/[0.05] to-ink-black/50 border border-imperial-red/20">
+            <h3 className="font-calligraphy text-xl text-amber-100 text-center mb-4">未来十年流年</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {result.liuNian.map(n => (
+                <div
+                  key={n.year}
+                  className={`p-3 rounded-xl border flex items-center gap-3 ${
+                    n.score >= 4
+                      ? 'bg-green-500/[0.05] border-green-500/20'
+                      : n.score === 3
+                        ? 'bg-ink-black/60 border-imperial-red/10'
+                        : 'bg-red-500/[0.05] border-red-500/20'
+                  }`}
+                >
+                  <div className="text-center shrink-0">
+                    <p className="text-amber-400/40 text-[10px]">{n.year}</p>
+                    <p className="font-calligraphy text-lg text-amber-100 leading-tight">
+                      {n.gan}{n.zhi}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-amber-400/70 text-xs">
+                      {n.tenGod} · {'★'.repeat(n.score)}{'☆'.repeat(5 - n.score)}
+                    </p>
+                    <p className="text-amber-400/50 text-xs mt-0.5 truncate" title={n.verdict}>{n.verdict}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Day Master Comment */}
           <div className="p-5 rounded-2xl bg-gradient-to-b from-imperial-red/[0.05] to-ink-black/50 border border-imperial-red/20">

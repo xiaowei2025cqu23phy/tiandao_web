@@ -27,6 +27,9 @@ export default function DailyFortune() {
         <p className="text-2xl font-calligraphy text-amber-200 mt-1">
           {almanac.yearGan}{almanac.yearZhi}年 · {almanac.monthGan}{almanac.monthZhi}月 · {almanac.dayGan}{almanac.dayZhi}日
         </p>
+        <p className="text-amber-400/50 text-xs mt-1">
+          农历 {almanac.lunarYear}年 {almanac.lunarDate}
+        </p>
       </motion.div>
 
       {/* Lucky Info Cards */}

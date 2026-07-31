@@ -9,6 +9,7 @@ import {
   getDayPillar,
   getSolarTermName,
 } from './ganzhi';
+import { solar2lunar } from './lunar';
 
 const ZODIAC = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
 
@@ -74,6 +75,8 @@ const ZODIAC_FORTUNE: Record<string, string[][]> = {
 export interface AlmanacDay {
   year: number; month: number; day: number;
   weekday: string;          // 星期X
+  lunarDate: string;        // 农历月日，如「六月十八」
+  lunarYear: string;        // 农历年干支，如「丙午」
   yearGan: string; yearZhi: string;
   monthGan: string; monthZhi: string;
   dayGan: string; dayZhi: string;
@@ -94,6 +97,7 @@ export function getAlmanac(date?: Date): AlmanacDay {
   const yearPillar = getYearPillar(y, m, day);
   const monthPillar = getMonthPillar(yearPillar.ganIndex, m, day);
   const dayPillar = getDayPillar(y, m, day);
+  const lunar = solar2lunar(y, m, day);
 
   const dayZhiName = dayPillar.zhi;
   const wx = ZHI_WUXING[dayZhiName] || '土';
@@ -102,6 +106,8 @@ export function getAlmanac(date?: Date): AlmanacDay {
   return {
     year: y, month: m, day,
     weekday: `星期${'日一二三四五六'[d.getDay()]}`,
+    lunarDate: lunar.label,
+    lunarYear: `${yearPillar.gan}${yearPillar.zhi}`,
     yearGan: yearPillar.gan, yearZhi: yearPillar.zhi,
     monthGan: monthPillar.gan, monthZhi: monthPillar.zhi,
     dayGan: dayPillar.gan, dayZhi: dayZhiName,

@@ -9,8 +9,10 @@ import {
   getMonthPillar,
   getDayPillar,
   getHourPillar,
-  daysFrom1900,
 } from './ganzhi';
+import { solar2lunar } from './lunar';
+import { correctSolarTime, trueSolarHour } from './solarTime';
+import { buildDaYun, buildLiuNian, getTenGod } from './dayun';
 
 export { getHourZhiIndex as getHourZhi } from './ganzhi';
 
@@ -18,28 +20,56 @@ export { getHourZhiIndex as getHourZhi } from './ganzhi';
 // 主计算函数
 // ════════════════════════════════════════════════════════
 
+export interface BaziOptions {
+  minute?: number;      // 出生分钟 0-59
+  longitude?: number;   // 出生地经度（东经正），默认 120（东八区标准时）
+}
+
 export function calculateBazi(
   year: number, month: number, day: number,
   hour: number, gender: string = '男',
+  options: BaziOptions = {},
 ): BaziResult {
+  const longitude = options.longitude ?? 120;
+  const minute = options.minute ?? 0;
+  const solarTime = correctSolarTime(hour, minute, longitude);
+  const effectiveHour = trueSolarHour(hour, minute, longitude);
+
   // 年柱（以立春为界）
   const yearPillar = getYearPillar(year, month, day);
   // 月柱（五虎遁 + 节气定月支）
   const monthPillar = getMonthPillar(yearPillar.ganIndex, month, day);
   // 日柱（1900-01-01 甲戌日锚点，精确）
   const dayPillar = getDayPillar(year, month, day);
-  // 时柱（五鼠遁）
-  const hourPillar = getHourPillar(dayPillar.ganIndex, hour);
+  // 时柱（五鼠遁，用真太阳时）
+  const hourPillar = getHourPillar(dayPillar.ganIndex, effectiveHour);
+
+  const lunar = solar2lunar(year, month, day);
+  const { qiYun, steps } = buildDaYun(
+    year, month, day, gender,
+    yearPillar.ganIndex, monthPillar, dayPillar.ganIndex,
+  );
+  const liuNian = buildLiuNian(dayPillar.ganIndex, new Date().getFullYear(), 10);
 
   return {
     year: yearPillar,
     month: monthPillar,
     day: dayPillar,
     hour: hourPillar,
+    tenGods: [
+      getTenGod(dayPillar.ganIndex, yearPillar.ganIndex),
+      getTenGod(dayPillar.ganIndex, monthPillar.ganIndex),
+      '日主',
+      getTenGod(dayPillar.ganIndex, hourPillar.ganIndex),
+    ],
     birthDate: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
     birthHour: hour,
-    lunarDate: approximateLunar(year, month, day),
+    lunarDate: `${lunar.label}（农历${lunar.year}年）`,
     gender,
+    longitude,
+    solarTime,
+    daYun: { qiYun, steps },
+    liuNian,
   };
 }
 
@@ -94,26 +124,6 @@ export function dayMasterComment(bazi: BaziResult): string {
     '癸': '癸水至弱，达于天津。癸水为阴水，如雨露之水，细腻敏感，润物无声。',
   };
   return comments[gan] || `${gan}日主，${wx}性${yinYang}。`;
-}
-
-// ════════════════════════════════════════════════════════
-// 简略农历（近似）
-// ════════════════════════════════════════════════════════
-
-function approximateLunar(year: number, month: number, day: number): string {
-  // 精确农历需查表，这里给出参考说明
-  const lunarMonths = ['正月', '二月', '三月', '四月', '五月', '六月',
-    '七月', '八月', '九月', '十月', '冬月', '腊月'];
-  const lunarDays = ['初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
-    '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
-    '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'];
-
-  // 简略偏移（实际需精确查表，此处给近似）
-  const offsetDays = daysFrom1900(year, month, day);
-  const lunarDayIdx = (offsetDays + 2) % 30; // 粗略近似
-  const lunarMonthIdx = ((offsetDays / 30) | 0) % 12;
-
-  return `${lunarMonths[lunarMonthIdx]}${lunarDays[lunarDayIdx]}（近似）`;
 }
 
 // ════════════════════════════════════════════════════════

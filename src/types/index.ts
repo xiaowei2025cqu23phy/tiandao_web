@@ -84,10 +84,21 @@ export interface BaziResult {
   month: BaziPillar;   // 月柱
   day: BaziPillar;     // 日柱
   hour: BaziPillar;    // 时柱
+  tenGods: [string, string, string, string]; // 年/月/日/时干相对日主的十神（日主为「日主」）
   birthDate: string;   // 公历生日
   birthHour: number;   // 出生时辰 (0-23)
   lunarDate: string;   // 农历日期
   gender: string;      // 男/女
+  longitude: number;   // 出生地经度（东经正）
+  solarTime: {
+    correctedHour: number;   // 真太阳时小时
+    correctedMinute: number; // 真太阳时分钟
+    correctionMinutes: number;
+    label: string;           // 如「11:46」
+    note: string;
+  };
+  daYun: DaYunResult;
+  liuNian: LiuNianYear[];
 }
 
 export interface WuxingAnalysis {
@@ -96,4 +107,40 @@ export interface WuxingAnalysis {
   water: number;   // 水
   fire: number;    // 火
   earth: number;   // 土
+}
+
+export interface QiYunInfo {
+  direction: '顺排' | '逆排';
+  startAge: number;   // 起运岁数（简化：天数 ÷ 3）
+  startYear: number;  // 起运公历年份
+  note: string;
+}
+
+export interface DaYunStep {
+  gan: string;
+  zhi: string;
+  ganIndex: number;
+  zhiIndex: number;
+  tenGod: string;
+  startAge: number;
+  endAge: number;
+  startYear: number;
+  endYear: number;
+  isCurrent: boolean; // 当前是否处于该大运
+}
+
+export interface DaYunResult {
+  qiYun: QiYunInfo;
+  steps: DaYunStep[];
+}
+
+export interface LiuNianYear {
+  year: number;
+  gan: string;
+  zhi: string;
+  ganIndex: number;
+  zhiIndex: number;
+  tenGod: string;
+  verdict: string;
+  score: number; // 1-5
 }
