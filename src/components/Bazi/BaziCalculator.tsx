@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, User, MapPin, Sparkles } from 'lucide-react';
 import { calculateBazi, analyzeWuxing, dayMasterComment, wuxingLabel } from '../../data/bazi';
+import { getShenSha, getChangsheng, CHANGSHENG_DESC } from '../../data/shensha';
 import type { BaziResult, WuxingAnalysis } from '../../types';
 
 export default function BaziCalculator() {
@@ -243,6 +244,52 @@ export default function BaziCalculator() {
               </p>
             </div>
           )}
+
+          {/* Shen Sha + Changsheng */}
+          {(() => {
+            const pillars = [result.year, result.month, result.day, result.hour];
+            const shensha = getShenSha(pillars);
+            const stages = ['年支', '月支', '日支', '时支'].map((label, i) => ({
+              label,
+              stage: getChangsheng(result.day.ganIndex, pillars[i].zhiIndex),
+            }));
+            const monthStage = stages[1].stage;
+            return (
+              <div className="p-6 rounded-2xl bg-gradient-to-b from-imperial-red/[0.05] to-ink-black/50 border border-imperial-red/20">
+                <h3 className="font-calligraphy text-xl text-amber-100 text-center mb-4">神煞与长生</h3>
+
+                {shensha.length > 0 ? (
+                  <div className="space-y-2">
+                    {shensha.map(s => (
+                      <div key={s.name} className="p-3 rounded-xl bg-ink-black/60 border border-imperial-red/10">
+                        <div className="flex items-center gap-2">
+                          <span className="text-amber-200 text-sm font-medium">{s.name}</span>
+                          <span className="text-amber-400/50 text-[11px]">
+                            {s.pillars.join('、')}见
+                          </span>
+                        </div>
+                        <p className="text-amber-400/50 text-xs mt-1">{s.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-amber-400/40 text-xs text-center">四柱中未见常见神煞</p>
+                )}
+
+                <div className="grid grid-cols-4 gap-2 mt-4">
+                  {stages.map(s => (
+                    <div key={s.label} className="p-2.5 rounded-xl bg-ink-black/60 border border-imperial-red/10 text-center">
+                      <p className="text-amber-400/40 text-[10px]">{s.label}</p>
+                      <p className="text-amber-200 text-sm mt-0.5">{s.stage}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-amber-400/50 text-xs text-center mt-3">
+                  {result.day.gan}日主对月令为「{monthStage}」：{CHANGSHENG_DESC[monthStage]}
+                </p>
+              </div>
+            );
+          })()}
 
           {/* Da Yun */}
           <div className="p-6 rounded-2xl bg-gradient-to-b from-imperial-red/[0.05] to-ink-black/50 border border-imperial-red/20">

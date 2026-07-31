@@ -142,3 +142,23 @@ export function solar2lunar(year: number, month: number, day: number): LunarDate
     label: `${monthCn}${dayCn}`,
   };
 }
+
+export interface MoonPhaseInfo {
+  name: string;
+  emoji: string;
+}
+
+/** 由农历日推月相（初一新月，十五前后满月，月末晦月） */
+export function moonPhase(lunarDay: number, daysInMonth: number): MoonPhaseInfo {
+  const d = lunarDay;
+  if (d === 1) return { name: '新月', emoji: '🌑' };
+  if (d <= 6) return { name: '娥眉月', emoji: '🌒' };
+  if (d <= 8) return { name: '上弦月', emoji: '🌓' };
+  if (d <= 13) return { name: '盈凸月', emoji: '🌔' };
+  if (d <= 16) return { name: '满月', emoji: '🌕' };
+  if (d <= 21) return { name: '亏凸月', emoji: '🌖' };
+  if (d <= 23) return { name: '下弦月', emoji: '🌗' };
+  if (d <= 28) return { name: '残月', emoji: '🌘' };
+  if (d === daysInMonth) return { name: '晦月', emoji: '🌑' };
+  return { name: '残月', emoji: '🌘' };
+}

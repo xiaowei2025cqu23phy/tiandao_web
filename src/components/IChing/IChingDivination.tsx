@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { RotateCcw, Coins, Hash, Clock, Wheat, Sparkles, Briefcase, Heart, TrendingUp } from 'lucide-react';
+import { RotateCcw, Coins, Hash, Clock, Wheat, Sprout, Sparkles, Briefcase, Heart, TrendingUp } from 'lucide-react';
 import type { LineType, DivinationResult, AIConfig, DivinationMethod } from '../../types';
 import { getHexagramByBinary, getMutualHexagram, getInverseHexagram, getComplementHexagram } from '../../data/hexagrams';
 import { augmentHexagram } from '../../data/nayin';
 import { calcTiYong } from '../../data/tiyong';
 import { getAIDivination } from '../../services/aiService';
 import CoinToss from './CoinToss';
+import YarrowDivination from './YarrowDivination';
 import HexagramDisplay from './HexagramDisplay';
 import WuXingCycle from './WuXingCycle';
 import TypingText from '../Common/TypingText';
+import { numberCast, timeCast } from '../../data/castMethods';
 
 interface Props { aiConfig: AIConfig; onSave: (r: DivinationResult) => void; selectedRecord: DivinationResult | null; }
 
@@ -20,14 +22,12 @@ const METHODS: { id: DivinationMethod; icon: React.ReactNode; label: string; des
   { id: 'rice', icon: <Wheat size={16} />, label: '米卦', desc: '随手取数，灵动成卦' },
   { id: 'number', icon: <Hash size={16} />, label: '数字卦', desc: '自报三数，即刻起卦' },
   { id: 'time', icon: <Clock size={16} />, label: '时间卦', desc: '以当下时间起卦' },
+  { id: 'yarrow', icon: <Sprout size={16} />, label: '蓍草卦', desc: '大衍筮法，最古之法' },
 ];
 
 function linesToBinary(lines: LineType[]): string {
   return lines.map(l => (l === 'yang' || l === 'old_yang') ? '1' : '0').join('');
 }
-
-// 八卦二进制（下→上），坤=000 ... 乾=111
-const TRIGRAM_BINS = ['000', '001', '010', '011', '100', '101', '110', '111'];
 
 /** 模块级构建结果：不依赖组件状态，纯逻辑（供事件回调调用） */
 function buildDivinationResult(
@@ -80,50 +80,18 @@ export default function IChingDivination({ aiConfig, onSave, selectedRecord }: P
   const handleNumberSubmit = () => {
     const a = parseInt(num1) || 0, b = parseInt(num2) || 0, c = parseInt(num3) || 0;
     if (!a || !b || !c) return;
-    // 上卦=num1%8, 下卦=num2%8, 动爻=num3%6
-    const up = TRIGRAM_BINS[a % 8];
-    const lo = TRIGRAM_BINS[b % 8];
-    const moving = c % 6; // 0-based, 0=初爻
-
-    const bin = lo + up;
-    // Convert to LineType array (all yang)
-    const ll: LineType[] = bin.split('').map((ch, i) => {
-      const isYang = ch === '1';
-      return i === moving ? (isYang ? 'old_yang' : 'old_yin') : (isYang ? 'yang' : 'yin');
-    });
-    buildResult(ll, 'number');
+    buildResult(numberCast(a, b, c), 'number');
   };
 
   // ── Time divination ──────────────────────────
   const handleTimeSubmit = () => {
     const now = new Date();
-    const yr = now.getFullYear(), mo = now.getMonth() + 1, dy = now.getDate(), hr = now.getHours();
-    const up = ((yr % 10 + mo) % 8);
-    const lo = ((dy + hr) % 8);
-    const moving = ((yr + mo + dy + hr) % 6);
-
-    const upBin = TRIGRAM_BINS[up];
-    const loBin = TRIGRAM_BINS[lo];
-    const bin = loBin + upBin;
-    const ll: LineType[] = bin.split('').map((ch, i) => {
-      const isYang = ch === '1';
-      return i === moving ? (isYang ? 'old_yang' : 'old_yin') : (isYang ? 'yang' : 'yin');
-    });
-    buildResult(ll, 'time');
+    buildResult(timeCast(now), 'time');
   };
 
   // ── Rice divination ──────────────────────────
   const submitRice = (a: number, b: number, c: number) => {
-    const up = TRIGRAM_BINS[a % 8];
-    const lo = TRIGRAM_BINS[b % 8];
-    const moving = c % 6;
-
-    const bin = lo + up;
-    const ll: LineType[] = bin.split('').map((ch, i) => {
-      const isYang = ch === '1';
-      return i === moving ? (isYang ? 'old_yang' : 'old_yin') : (isYang ? 'yang' : 'yin');
-    });
-    buildResult(ll, 'rice');
+    buildResult(numberCast(a, b, c), 'rice');
   };
 
   // ── Common result builder ─────────────────────
@@ -245,6 +213,14 @@ export default function IChingDivination({ aiConfig, onSave, selectedRecord }: P
                 <p className="text-amber-200/80 text-sm">每摇一次出三枚铜钱，共六次成一卦</p>
               </div>
               <CoinToss onComplete={handleTossComplete} />
+            </div>
+          )}
+          {method === 'yarrow' && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <p className="text-amber-200/80 text-sm">每爻三变，共十八变成一卦</p>
+              </div>
+              <YarrowDivination onComplete={ll => buildResult(ll, 'yarrow')} />
             </div>
           )}
           {method === 'number' && (

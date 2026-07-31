@@ -1,17 +1,28 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Star, Palette, Navigation, TriangleAlert, CheckCircle2 } from 'lucide-react';
 import { getAlmanac } from '../../data/almanac';
+import { solar2lunar, moonPhase, monthDays, leapDays } from '../../data/lunar';
+import { getTaiSui } from '../../data/taisui';
 import type { AlmanacDay } from '../../data/almanac';
 
 export default function DailyFortune() {
   const [almanac] = useState<AlmanacDay | null>(() => getAlmanac(new Date()));
   const [selectedZodiac, setSelectedZodiac] = useState('');
+  const moon = useMemo(() => {
+    if (!almanac) return null;
+    const l = solar2lunar(almanac.year, almanac.month, almanac.day);
+    return moonPhase(l.day, l.isLeap ? leapDays(l.year) : monthDays(l.year, l.month));
+  }, [almanac]);
+  const taisui = useMemo(() => getTaiSui(new Date().getFullYear()), []);
 
   if (!almanac) return null;
 
   const userFortune = selectedZodiac
     ? almanac.fortunes.find(f => f.zodiac === selectedZodiac)
+    : null;
+  const userOffender = userFortune
+    ? taisui.offenders.find(o => o.zodiac === userFortune.zodiac)
     : null;
 
   return (
@@ -28,7 +39,7 @@ export default function DailyFortune() {
           {almanac.yearGan}{almanac.yearZhi}年 · {almanac.monthGan}{almanac.monthZhi}月 · {almanac.dayGan}{almanac.dayZhi}日
         </p>
         <p className="text-amber-400/50 text-xs mt-1">
-          农历 {almanac.lunarYear}年 {almanac.lunarDate}
+          农历 {almanac.lunarYear}年 {almanac.lunarDate} {moon ? `· ${moon.emoji} ${moon.name}` : ''}
         </p>
       </motion.div>
 
@@ -98,8 +109,33 @@ export default function DailyFortune() {
           <motion.div className="p-4 rounded-xl bg-ink-black/60 border border-imperial-red/10 text-center" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
             <p className="text-amber-200 font-medium">{userFortune.zodiac}年 {userFortune.stars} · {userFortune.summary}</p>
             <p className="text-amber-400/60 text-sm mt-1">{userFortune.detail}</p>
+            {userOffender && (
+              <p className="text-red-400/80 text-xs mt-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-1.5">
+                ⚠️ {taisui.ganZhi}年你犯{userOffender.relation}，{userOffender.advice}
+              </p>
+            )}
           </motion.div>
         )}
+      </motion.div>
+
+      {/* Tai Sui */}
+      <motion.div
+        className="p-6 rounded-2xl bg-gradient-to-b from-imperial-red/[0.05] to-ink-black/50 border border-imperial-red/20"
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+      >
+        <h3 className="font-calligraphy text-xl text-amber-100 text-center mb-2">流年太岁</h3>
+        <p className="text-amber-400/40 text-xs text-center mb-4">
+          {taisui.ganZhi}年 · 值太岁生肖 {taisui.zodiac}
+        </p>
+        <div className="flex flex-wrap justify-center gap-2 mb-4">
+          {taisui.offenders.map(o => (
+            <span key={`${o.zodiac}-${o.relation}`}
+              className="px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 text-red-300/90 text-xs">
+              {o.zodiac} · {o.relation.replace('太岁', '')}
+            </span>
+          ))}
+        </div>
+        <p className="text-amber-400/50 text-xs text-center leading-relaxed">{taisui.note}</p>
       </motion.div>
     </div>
   );
