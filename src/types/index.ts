@@ -94,9 +94,12 @@ export interface BaziResult {
     correctedHour: number;   // 真太阳时小时
     correctedMinute: number; // 真太阳时分钟
     correctionMinutes: number;
+    longitudeCorrection: number;
+    equationOfTime: number;
     label: string;           // 如「11:46」
     note: string;
   };
+  boundaryWarning?: string;  // 出生时刻距交节过近时的提示
   daYun: DaYunResult;
   liuNian: LiuNianYear[];
 }

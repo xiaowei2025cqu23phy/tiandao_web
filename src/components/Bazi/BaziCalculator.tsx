@@ -194,6 +194,12 @@ export default function BaziCalculator() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
+          {result.boundaryWarning && (
+            <div className="px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300/90 text-xs leading-relaxed">
+              ⚠️ {result.boundaryWarning}
+            </div>
+          )}
+
           {/* Four Pillars */}
           <div className="p-6 rounded-2xl bg-gradient-to-b from-imperial-red/[0.05] to-ink-black/50 border border-imperial-red/20">
             <h3 className="font-calligraphy text-xl text-amber-100 text-center mb-5">四柱八字</h3>

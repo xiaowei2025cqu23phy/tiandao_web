@@ -9,6 +9,7 @@ import {
   getHourPillar,
   getYearPillarExact,
   getMonthPillarExact,
+  getJieTimes,
 } from './ganzhi';
 import { solar2lunar } from './lunar';
 import { correctSolarTime, trueSolarHour } from './solarTime';
@@ -25,6 +26,29 @@ export interface BaziOptions {
   longitude?: number;   // 出生地经度（东经正），默认 120（东八区标准时）
 }
 
+/** 出生时刻距最近「节」交节不足阈值时，提示查权威历法 */
+function nearestJieWarning(
+  year: number, month: number, day: number,
+  hour: number, minute: number,
+): string | undefined {
+  const birth = Date.UTC(year, month - 1, day, hour, minute, 0) - 8 * 3600000;
+  const candidates = [...getJieTimes(year - 1), ...getJieTimes(year), ...getJieTimes(year + 1)];
+  let nearest = Infinity;
+  let name = '';
+  for (const t of candidates) {
+    const dist = Math.abs(t.time - birth);
+    if (dist < nearest) {
+      nearest = dist;
+      name = t.name;
+    }
+  }
+  const minutes = nearest / 60000;
+  if (minutes <= 20) {
+    return `出生时刻距「${name}」交节仅约 ${Math.max(1, Math.round(minutes))} 分钟，处于节气时刻误差（约 ±8 分钟）与出生时间记录精度范围内；如需精确年柱/月柱，请对照天文台或权威万年历核实交节时刻。`;
+  }
+  return undefined;
+}
+
 export function calculateBazi(
   year: number, month: number, day: number,
   hour: number, gender: string = '男',
@@ -32,8 +56,8 @@ export function calculateBazi(
 ): BaziResult {
   const longitude = options.longitude ?? 120;
   const minute = options.minute ?? 0;
-  const solarTime = correctSolarTime(hour, minute, longitude);
-  const effectiveHour = trueSolarHour(hour, minute, longitude);
+  const solarTime = correctSolarTime(year, month, day, hour, minute, longitude);
+  const effectiveHour = trueSolarHour(year, month, day, hour, minute, longitude);
 
   // 年柱/月柱：以精确立春/交节时刻为界（出生墙钟按东八区解释）
   const yearPillar = getYearPillarExact(year, month, day, hour, minute);
@@ -44,6 +68,7 @@ export function calculateBazi(
   const hourPillar = getHourPillar(dayPillar.ganIndex, effectiveHour);
 
   const lunar = solar2lunar(year, month, day);
+  const boundaryWarning = nearestJieWarning(year, month, day, hour, minute);
   const { qiYun, steps } = buildDaYun(
     year, month, day, gender,
     yearPillar.ganIndex, monthPillar, dayPillar.ganIndex,
@@ -68,6 +93,7 @@ export function calculateBazi(
     gender,
     longitude,
     solarTime,
+    boundaryWarning,
     daYun: { qiYun, steps },
     liuNian,
   };
