@@ -100,6 +100,28 @@ npm run test:watch  # 监听模式
 | Vitest | 单元测试 |
 | Lucide React | 图标 |
 
+## 部署上线
+
+纯前端静态应用，无后端依赖，构建产物在 `dist/`，任何静态托管都能跑。
+
+```bash
+npm ci && npm run build   # 产物在 dist/
+```
+
+**推荐平台（零配置，PWA 友好）**
+
+- **Vercel**：导入仓库即可，已内置 `vercel.json`（SPA 回退 + 静态资源缓存头）；
+- **Cloudflare Pages / Netlify**：导入仓库即可，`public/_redirects` 已提供 SPA 回退；
+- **GitHub Pages**：已提供 `.github/workflows/deploy.yml`（push 到 master 自动构建部署）。
+  注意：仅适用于**根路径**部署（用户站或自定义域名）；项目子路径（`/repo/`）需调整 `base` 与 PWA 路径，见工作流内注释。
+
+**上线前须知**
+
+- 部署地址必须是 **HTTPS**（PWA Service Worker 的要求；`localhost` 除外）；
+- 首次联网访问后，本地算法（占卜/八字/黄历/择日等）断网可用；AI 解卦需联网；
+- AI API Key 仅保存在浏览器 localStorage（客户端直连），请勿在公共设备上配置；
+- 更换部署域名后，`index.html` 中的 `og:image` 建议改为绝对地址。
+
 ## 项目结构
 
 ```
