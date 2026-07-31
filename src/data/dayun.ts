@@ -1,10 +1,10 @@
 /**
  * 大运 / 流年 / 十神
  * 大运以月柱为起点，按年干阴阳 × 性别定顺逆（阳男阴女顺排，阴男阳女逆排），每步 10 年。
- * 起运岁数简化处理：出生到最近「节」的天数 ÷ 3（四舍五入）。
+ * 起运岁数：出生到最近「节」的真实时间间隔（天）÷ 3（四舍五入），节气时刻由天文算法给出。
  */
 
-import { GAN, ZHI, SOLAR_TERMS, daysFrom1900 } from './ganzhi';
+import { GAN, ZHI, getJieTimes } from './ganzhi';
 import type { BaziPillar, DaYunStep, LiuNianYear, QiYunInfo } from '../types';
 
 /** 日主与其他天干的十神关系（dayGanIndex 0-9） */
@@ -19,36 +19,29 @@ export function getTenGod(dayGanIndex: number, otherGanIndex: number): string {
   return samePolarity ? '偏印' : '正印';                                    // 生日主
 }
 
-/** 距下一个「节」的天数（节气用近似固定日期） */
-function daysToNextTerm(year: number, month: number, day: number): number {
-  const birth = daysFrom1900(year, month, day);
-  let best = Infinity;
-  for (const t of SOLAR_TERMS) {
-    const d = daysFrom1900(year, t.month, t.day);
-    if (d > birth) best = Math.min(best, d - birth);
-  }
-  if (best === Infinity) {
-    // 跨年：取下一年小寒
-    const first = SOLAR_TERMS[0];
-    best = daysFrom1900(year + 1, first.month, first.day) - birth;
-  }
-  return best;
+/** 出生墙钟（东八区）→ UTC 毫秒 */
+function birthInstant(year: number, month: number, day: number, hour: number, minute: number): number {
+  return Date.UTC(year, month - 1, day, hour, minute, 0) - 8 * 3600000;
 }
 
-/** 距上一个「节」的天数（返回正数） */
-function daysFromPrevTerm(year: number, month: number, day: number): number {
-  const birth = daysFrom1900(year, month, day);
-  let best = Infinity;
-  for (const t of SOLAR_TERMS) {
-    const d = daysFrom1900(year, t.month, t.day);
-    if (d < birth) best = Math.min(best, birth - d);
+/** 距下一个「节」的真实天数 */
+function daysToNextJie(year: number, month: number, day: number, hour: number, minute: number): number {
+  const birth = birthInstant(year, month, day, hour, minute);
+  const candidates = [...getJieTimes(year - 1), ...getJieTimes(year), ...getJieTimes(year + 1)]
+    .sort((a, b) => a.time - b.time);
+  const next = candidates.find(t => t.time > birth);
+  return next ? (next.time - birth) / 86400000 : 0;
+}
+
+/** 距上一个「节」的真实天数（正数） */
+function daysFromPrevJie(year: number, month: number, day: number, hour: number, minute: number): number {
+  const birth = birthInstant(year, month, day, hour, minute);
+  const candidates = [...getJieTimes(year - 1), ...getJieTimes(year)].sort((a, b) => a.time - b.time);
+  let prev = 0;
+  for (const t of candidates) {
+    if (t.time < birth) prev = t.time;
   }
-  if (best === Infinity) {
-    // 跨年：取上一年大雪
-    const last = SOLAR_TERMS[SOLAR_TERMS.length - 1];
-    best = birth - daysFrom1900(year - 1, last.month, last.day);
-  }
-  return best;
+  return prev ? (birth - prev) / 86400000 : 0;
 }
 
 const LIUNIAN_VERDICT: Record<string, { verdict: string; score: number }> = {
@@ -83,6 +76,8 @@ export function buildDaYun(
   dayGanIndex: number,
   stepCount: number = 10,
   nowYear?: number,
+  birthHour: number = 12,
+  birthMinute: number = 0,
 ): DaYunResult {
   const male = gender === '男';
   const yearYang = yearGanIndex % 2 === 0; // 甲丙戊庚壬为阳
@@ -90,8 +85,8 @@ export function buildDaYun(
   const direction = forward ? '顺排' : '逆排';
 
   const days = forward
-    ? daysToNextTerm(birthYear, birthMonth, birthDay)
-    : daysFromPrevTerm(birthYear, birthMonth, birthDay);
+    ? daysToNextJie(birthYear, birthMonth, birthDay, birthHour, birthMinute)
+    : daysFromPrevJie(birthYear, birthMonth, birthDay, birthHour, birthMinute);
   const startAge = Math.max(1, Math.round(days / 3));
   const startYear = birthYear + startAge;
   const dir = forward ? 1 : -1;

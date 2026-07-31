@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { nextFestivalDate, getUpcomingFestivals, FESTIVALS } from '../src/data/festivals';
-import { getCurrentSolarTerm, SOLAR_TERMS_24 } from '../src/data/solarTerms';
+import { getCurrentSolarTerm, getSolarTermDates, SOLAR_TERMS_24 } from '../src/data/solarTerms';
 import { solar2lunar, moonPhase } from '../src/data/lunar';
 
 const festival = (id: string) => FESTIVALS.find(f => f.id === id)!;
@@ -61,10 +61,16 @@ describe('二十四节气', () => {
     expect(getCurrentSolarTerm(new Date(2026, 0, 7)).name).toBe('小寒');
   });
 
-  it('节气日期与八字引擎的「节」一致（立春 2/4、惊蛰 3/6 等）', () => {
-    for (const name of ['立春', '惊蛰', '清明', '立夏', '芒种', '小暑', '立秋', '白露', '寒露', '立冬', '大雪', '小寒']) {
-      const t = SOLAR_TERMS_24.find(x => x.name === name)!;
-      expect(t.day).toBeGreaterThan(0);
+  it('节气计算日期与近似参考日期相差不超过 2 天', () => {
+    const BEIJING = 8 * 3600000;
+    for (const td of getSolarTermDates(2026)) {
+      const b = new Date(td.time.getTime() + BEIJING);
+      const approx = SOLAR_TERMS_24.find(t => t.name === td.name)!;
+      const diff = Math.abs(
+        (Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate())
+          - Date.UTC(2026, approx.month - 1, approx.day)) / 86400000,
+      );
+      expect(diff, td.name).toBeLessThanOrEqual(2);
     }
   });
 });

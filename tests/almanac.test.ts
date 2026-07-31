@@ -9,7 +9,7 @@ describe('黄历与八字引擎一致性', () => {
     expect(`${a.monthGan}${a.monthZhi}`).toBe('乙未');
     expect(`${a.dayGan}${a.dayZhi}`).toBe('丙午');
     expect(a.weekday).toBe('星期五');
-    expect(a.solarTerm).toBe('小暑');
+    expect(a.solarTerm).toBe('大暑');
     expect(a.zodiac).toBe('马');
   });
 
@@ -28,7 +28,7 @@ describe('黄历与八字引擎一致性', () => {
         expect(`${a.dayGan}${a.dayZhi}`, `${y}-${m}-15 日柱`).toBe(pillarLabel(getDayPillar(y, m, 15)));
         expect(`${a.yearGan}${a.yearZhi}`, `${y}-${m}-15 年柱`).toBe(pillarLabel(getYearPillar(y, m, 15)));
         const yp = getYearPillar(y, m, 15);
-        expect(`${a.monthGan}${a.monthZhi}`, `${y}-${m}-15 月柱`).toBe(pillarLabel(getMonthPillar(yp.ganIndex, m, 15)));
+        expect(`${a.monthGan}${a.monthZhi}`, `${y}-${m}-15 月柱`).toBe(pillarLabel(getMonthPillar(yp.ganIndex, y, m, 15)));
       }
     }
   });

@@ -1,11 +1,13 @@
 /**
- * 二十四节气（近似固定日期，与实际节气可能相差 1 天）
- * 「节」的日期与八字引擎 SOLAR_TERMS 保持一致口径。
+ * 二十四节气（内容数据 + 天文时刻）
+ * 时刻由 astro.ts 天文算法计算，日期与万年历一致。
  */
+
+import { getSolarTermTime, TERM_NAMES_24 } from './astro';
 
 export interface SolarTermInfo {
   name: string;
-  month: number;
+  month: number;   // 近似日期（仅作参考/兜底）
   day: number;
   season: '春' | '夏' | '秋' | '冬';
   meaning: string;
@@ -40,24 +42,33 @@ export const SOLAR_TERMS_24: SolarTermInfo[] = [
   { name: '大寒', month: 1, day: 20, season: '冬', meaning: '寒气之逆极，一年终章，年关将至。', custom: '尾牙祭、扫尘、备年货。', wellness: '保暖固阳，为春蓄势。' },
 ];
 
-/** 当前所处的节气（含跨年回绕） */
+export interface SolarTermDate {
+  name: string;
+  time: Date;   // 精确时刻（UTC；展示按北京时间）
+  info: SolarTermInfo;
+}
+
+/** 某公历年的 24 节气精确时刻 */
+export function getSolarTermDates(year: number): SolarTermDate[] {
+  return TERM_NAMES_24.map(name => {
+    const info = SOLAR_TERMS_24.find(t => t.name === name)!;
+    return { name, time: getSolarTermTime(year, name), info };
+  });
+}
+
+/** 当前所处的节气（含跨年回绕，按精确时刻） */
 export function getCurrentSolarTerm(date: Date = new Date()): SolarTermInfo {
-  const m = date.getMonth() + 1;
-  const d = date.getDate();
-  const sorted = [...SOLAR_TERMS_24].sort((a, b) => a.month - b.month || a.day - b.day);
-  let current: SolarTermInfo = SOLAR_TERMS_24[SOLAR_TERMS_24.length - 1];
-  let found = false;
-  for (const t of sorted) {
-    if (t.month < m || (t.month === m && t.day <= d)) {
-      current = t;
-      found = true;
-    } else {
-      break;
-    }
+  return getCurrentSolarTermDetail(date).info;
+}
+
+/** 当前节气及其精确时刻 */
+export function getCurrentSolarTermDetail(date: Date = new Date()): { info: SolarTermInfo; time: Date } {
+  const y = date.getFullYear();
+  const ms = date.getTime();
+  const candidates = [...getSolarTermDates(y - 1), ...getSolarTermDates(y)];
+  let current: SolarTermDate = candidates[candidates.length - 1];
+  for (const t of candidates) {
+    if (t.time.getTime() <= ms) current = t;
   }
-  if (!found) {
-    // 1/1-1/5：仍处上一年的冬至
-    current = SOLAR_TERMS_24.find(t => t.name === '冬至')!;
-  }
-  return current;
+  return { info: current.info, time: current.time };
 }

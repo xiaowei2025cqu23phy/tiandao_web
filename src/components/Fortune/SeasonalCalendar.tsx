@@ -2,11 +2,23 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Sun } from 'lucide-react';
 import { getUpcomingFestivals, FESTIVALS } from '../../data/festivals';
-import { getCurrentSolarTerm, SOLAR_TERMS_24 } from '../../data/solarTerms';
+import { getSolarTermDates, getCurrentSolarTermDetail } from '../../data/solarTerms';
 import { solar2lunar, moonPhase, monthDays, leapDays } from '../../data/lunar';
 import { getYearPillar } from '../../data/ganzhi';
 
 const SEASON_ORDER = ['春', '夏', '秋', '冬'] as const;
+const BEIJING_OFFSET = 8 * 3600000;
+
+/** UTC 时刻 → 北京时间墙钟 */
+function beijing(date: Date): Date {
+  return new Date(date.getTime() + BEIJING_OFFSET);
+}
+
+function formatBeijing(date: Date): string {
+  const b = beijing(date);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${b.getUTCMonth() + 1}月${b.getUTCDate()}日 ${pad(b.getUTCHours())}:${pad(b.getUTCMinutes())}`;
+}
 
 export default function SeasonalCalendar() {
   const today = useMemo(() => new Date(), []);
@@ -19,11 +31,12 @@ export default function SeasonalCalendar() {
       lunar: l,
       ganZhi: `${yp.gan}${yp.zhi}`,
       moon: moonPhase(l.day, l.isLeap ? leapDays(l.year) : monthDays(l.year, l.month)),
-      term: getCurrentSolarTerm(today),
+      term: getCurrentSolarTermDetail(today),
     };
   }, [today]);
 
   const upcoming = useMemo(() => getUpcomingFestivals(today, 5), [today]);
+  const termDates = useMemo(() => getSolarTermDates(today.getFullYear()), [today]);
 
   return (
     <div className="max-w-4xl mx-auto py-6 space-y-8">
@@ -43,7 +56,7 @@ export default function SeasonalCalendar() {
             {info.moon.emoji} {info.moon.name}
           </span>
           <span className="px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-200">
-            当前节气：{info.term.name}（{info.term.month}月{info.term.day}日）
+            当前节气：{info.term.info.name}（{formatBeijing(info.term.time)}）
           </span>
         </div>
       </motion.div>
@@ -87,7 +100,7 @@ export default function SeasonalCalendar() {
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
       >
         <h3 className="font-calligraphy text-xl text-amber-100 text-center mb-1">二十四节气</h3>
-        <p className="text-amber-400/40 text-xs text-center mb-5">节气日期为近似值，与精确历法可能相差 1 天</p>
+        <p className="text-amber-400/40 text-xs text-center mb-5">节气时刻由天文算法计算，与万年历一致（北京时间）</p>
         {SEASON_ORDER.map(season => (
           <div key={season} className="mb-5 last:mb-0">
             <p className="text-amber-400/60 text-sm mb-2 flex items-center gap-2">
@@ -97,8 +110,9 @@ export default function SeasonalCalendar() {
               季
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {SOLAR_TERMS_24.filter(t => t.season === season).map(t => {
-                const isCurrent = t.name === info.term.name;
+              {termDates.filter(td => td.info.season === season).map(td => {
+                const t = td.info;
+                const isCurrent = t.name === info.term.info.name;
                 return (
                   <div key={t.name}
                     className={`p-3.5 rounded-xl border transition-colors ${
@@ -108,7 +122,7 @@ export default function SeasonalCalendar() {
                     }`}>
                     <div className="flex items-center justify-between">
                       <p className="text-amber-200 font-medium text-sm">{t.name}</p>
-                      <span className="text-amber-400/40 text-[11px]">{t.month}月{t.day}日</span>
+                      <span className="text-amber-400/40 text-[11px]">{formatBeijing(td.time)}</span>
                     </div>
                     <p className="text-amber-400/60 text-xs mt-1.5 leading-relaxed">{t.meaning}</p>
                     <p className="text-amber-400/40 text-xs mt-1.5">

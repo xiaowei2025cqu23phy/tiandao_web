@@ -95,7 +95,7 @@ export function getAlmanac(date?: Date): AlmanacDay {
   const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
 
   const yearPillar = getYearPillar(y, m, day);
-  const monthPillar = getMonthPillar(yearPillar.ganIndex, m, day);
+  const monthPillar = getMonthPillar(yearPillar.ganIndex, y, m, day);
   const dayPillar = getDayPillar(y, m, day);
   const lunar = solar2lunar(y, m, day);
 
@@ -111,7 +111,7 @@ export function getAlmanac(date?: Date): AlmanacDay {
     yearGan: yearPillar.gan, yearZhi: yearPillar.zhi,
     monthGan: monthPillar.gan, monthZhi: monthPillar.zhi,
     dayGan: dayPillar.gan, dayZhi: dayZhiName,
-    solarTerm: getSolarTermName(m, day),
+    solarTerm: getSolarTermName(y, m, day),
     zodiac: ZODIAC[yearPillar.zhiIndex],
     wuxing: wx,
     auspicious: DAY_AUSPICIOUS[dayZhiName] || ['祭祀', '出行'],

@@ -5,10 +5,10 @@ import {
   GAN_WUXING,
   ZHI_WUXING,
   GAN_YINYANG,
-  getYearPillar,
-  getMonthPillar,
   getDayPillar,
   getHourPillar,
+  getYearPillarExact,
+  getMonthPillarExact,
 } from './ganzhi';
 import { solar2lunar } from './lunar';
 import { correctSolarTime, trueSolarHour } from './solarTime';
@@ -35,10 +35,9 @@ export function calculateBazi(
   const solarTime = correctSolarTime(hour, minute, longitude);
   const effectiveHour = trueSolarHour(hour, minute, longitude);
 
-  // 年柱（以立春为界）
-  const yearPillar = getYearPillar(year, month, day);
-  // 月柱（五虎遁 + 节气定月支）
-  const monthPillar = getMonthPillar(yearPillar.ganIndex, month, day);
+  // 年柱/月柱：以精确立春/交节时刻为界（出生墙钟按东八区解释）
+  const yearPillar = getYearPillarExact(year, month, day, hour, minute);
+  const monthPillar = getMonthPillarExact(yearPillar.ganIndex, year, month, day, hour, minute);
   // 日柱（1900-01-01 甲戌日锚点，精确）
   const dayPillar = getDayPillar(year, month, day);
   // 时柱（五鼠遁，用真太阳时）
@@ -48,6 +47,7 @@ export function calculateBazi(
   const { qiYun, steps } = buildDaYun(
     year, month, day, gender,
     yearPillar.ganIndex, monthPillar, dayPillar.ganIndex,
+    10, undefined, hour, minute,
   );
   const liuNian = buildLiuNian(dayPillar.ganIndex, new Date().getFullYear(), 10);
 

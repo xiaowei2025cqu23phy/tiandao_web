@@ -21,7 +21,7 @@ describe('大运排盘', () => {
   // 2024-02-10：甲辰年（甲阳）、丙寅月、甲辰日
   const year = 2024, month = 2, day = 10;
   const yearPillar = getYearPillar(year, month, day);
-  const monthPillar = getMonthPillar(yearPillar.ganIndex, month, day);
+  const monthPillar = getMonthPillar(yearPillar.ganIndex, year, month, day);
 
   it('阳年男顺排：丙寅 → 丁卯 → 戊辰 → 己巳', () => {
     expect(yearPillar.ganIndex).toBe(0);    // 甲
@@ -47,7 +47,7 @@ describe('大运排盘', () => {
   it('阴年男逆排：2023-08-01 癸卯年（癸阴）男 → 逆排', () => {
     const y2 = 2023, m2 = 8, d2 = 1;
     const yp = getYearPillar(y2, m2, d2);
-    const mp = getMonthPillar(yp.ganIndex, m2, d2);
+    const mp = getMonthPillar(yp.ganIndex, y2, m2, d2);
     expect(yp.ganIndex).toBe(9); // 癸
     const { steps, qiYun } = buildDaYun(y2, m2, d2, '男', yp.ganIndex, mp, 2, 4, 2026);
     expect(qiYun.direction).toBe('逆排');

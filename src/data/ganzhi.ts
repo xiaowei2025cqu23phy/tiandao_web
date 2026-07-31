@@ -1,4 +1,5 @@
 import type { BaziPillar } from '../types';
+import { getSolarTermTime, getSolarTermTimes, TERM_NAMES_24 } from './astro';
 
 // ════════════════════════════════════════════════════════
 // 天干地支基础数据（供八字 / 黄历共用，保证口径一致）
@@ -33,28 +34,26 @@ export const GAN_YINYANG: Record<string, string> = {
 const HOUR_ZHI = ['子', '丑', '丑', '寅', '寅', '卯', '卯', '辰', '辰', '巳', '巳', '午',
                   '午', '未', '未', '申', '申', '酉', '酉', '戌', '戌', '亥', '亥', '子'];
 
-// 二十四节气之「节」（近似固定日期，用于月柱；与标准历法可能相差 1 天）
-interface SolarTerm {
-  month: number;  // 1-12
-  day: number;    // 1-31
-  branch: number; // 该节气对应的月支序号（0-11）
-  name: string;
+// 十二「节」：决定月支（寅月从立春起，...，子月从大雪起）
+const JIE_NAMES = ['小寒', '立春', '惊蛰', '清明', '立夏', '芒种', '小暑', '立秋', '白露', '寒露', '立冬', '大雪'];
+const JIE_BRANCH: Record<string, number> = {
+  小寒: 1, 立春: 2, 惊蛰: 3, 清明: 4, 立夏: 5, 芒种: 6,
+  小暑: 7, 立秋: 8, 白露: 9, 寒露: 10, 立冬: 11, 大雪: 0,
+};
+
+/** 某公历年的 12 个「节」（UTC 毫秒时刻 + 对应月支） */
+export function getJieTimes(year: number): Array<{ name: string; time: number; branch: number }> {
+  return JIE_NAMES.map(name => ({
+    name,
+    time: getSolarTermTime(year, name).getTime(),
+    branch: JIE_BRANCH[name],
+  }));
 }
 
-export const SOLAR_TERMS: SolarTerm[] = [
-  { month: 1, day: 6, branch: 1, name: '小寒' },   // 丑月
-  { month: 2, day: 4, branch: 2, name: '立春' },   // 寅月
-  { month: 3, day: 6, branch: 3, name: '惊蛰' },   // 卯月
-  { month: 4, day: 5, branch: 4, name: '清明' },   // 辰月
-  { month: 5, day: 6, branch: 5, name: '立夏' },   // 巳月
-  { month: 6, day: 6, branch: 6, name: '芒种' },   // 午月
-  { month: 7, day: 7, branch: 7, name: '小暑' },   // 未月
-  { month: 8, day: 8, branch: 8, name: '立秋' },   // 申月
-  { month: 9, day: 8, branch: 9, name: '白露' },   // 酉月
-  { month: 10, day: 8, branch: 10, name: '寒露' }, // 戌月
-  { month: 11, day: 7, branch: 11, name: '立冬' }, // 亥月
-  { month: 12, day: 7, branch: 0, name: '大雪' },  // 子月
-];
+/** 北京时间（UTC+8）墙钟 → UTC 毫秒时刻 */
+function beijingToUtc(year: number, month: number, day: number, hour: number, minute: number): number {
+  return Date.UTC(year, month - 1, day, hour, minute, 0) - 8 * 3600000;
+}
 
 export function isLeap(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
@@ -70,26 +69,36 @@ export function daysFrom1900(year: number, month: number, day: number): number {
   return days + day - 1;
 }
 
-/** 当前处于哪个「节」之后（数组按时间升序；小寒前属于大雪后的子月） */
-function getSolarTermIndex(month: number, day: number): number {
-  let idx = -1;
-  for (let i = 0; i < SOLAR_TERMS.length; i++) {
-    const term = SOLAR_TERMS[i];
-    if (month > term.month || (month === term.month && day >= term.day)) idx = i;
-    else break;
+/** 月支（以精确节气时刻为界，日期级：当天 23:59 后所处的月支） */
+export function getMonthBranchIndex(year: number, month: number, day: number): number {
+  return getMonthBranchIndexExact(year, month, day, 23, 59);
+}
+
+/** 月支（时刻级：以出生时刻与交节时刻比较） */
+export function getMonthBranchIndexExact(
+  year: number, month: number, day: number,
+  hour: number = 12, minute: number = 0,
+): number {
+  const birth = beijingToUtc(year, month, day, hour, minute);
+  const candidates = [...getJieTimes(year - 1), ...getJieTimes(year)].sort((a, b) => a.time - b.time);
+  let branch = 0;
+  for (const t of candidates) {
+    if (t.time <= birth) branch = t.branch;
   }
-  return idx === -1 ? SOLAR_TERMS.length - 1 : idx;
+  return branch;
 }
 
-/** 月支（基于节气，近似）：寅=2 ... 丑=1 */
-export function getMonthBranchIndex(month: number, day: number): number {
-  const i = getSolarTermIndex(month, day);
-  return SOLAR_TERMS[i].branch;
-}
-
-/** 当前节气名称（如「小暑」） */
-export function getSolarTermName(month: number, day: number): string {
-  return SOLAR_TERMS[getSolarTermIndex(month, day)].name;
+/** 当前节气名（24 节气，日期级，与天文时刻一致） */
+export function getSolarTermName(year: number, month: number, day: number): string {
+  const endOfDay = beijingToUtc(year, month, day, 23, 59) + 59999;
+  const candidates = [...getSolarTermTimes(year - 1), ...getSolarTermTimes(year)].sort(
+    (a, b) => a.time.getTime() - b.time.getTime(),
+  );
+  let name = TERM_NAMES_24[TERM_NAMES_24.length - 1];
+  for (const t of candidates) {
+    if (t.time.getTime() <= endOfDay) name = t.name;
+  }
+  return name;
 }
 
 /** 时辰地支序号（0-11） */
@@ -105,20 +114,37 @@ export function getDayPillar(year: number, month: number, day: number): BaziPill
   return { gan: GAN[ganIdx], zhi: ZHI[zhiIdx], ganIndex: ganIdx, zhiIndex: zhiIdx };
 }
 
-/** 年柱：以立春为界（立春前按上一年计） */
+/** 年柱：以精确立春时刻为界（日期级：当天 23:59 后所处的干支年） */
 export function getYearPillar(year: number, month: number, day: number): BaziPillar {
-  const lichun = SOLAR_TERMS.find(t => t.name === '立春')!;
-  const effectiveYear = (month < lichun.month || (month === lichun.month && day < lichun.day))
-    ? year - 1
-    : year;
+  return getYearPillarExact(year, month, day, 23, 59);
+}
+
+/** 年柱（时刻级：以出生时刻与立春时刻比较） */
+export function getYearPillarExact(
+  year: number, month: number, day: number,
+  hour: number = 12, minute: number = 0,
+): BaziPillar {
+  const birth = beijingToUtc(year, month, day, hour, minute);
+  const lichun = getSolarTermTime(year, '立春').getTime();
+  const effectiveYear = birth >= lichun ? year : year - 1;
   const ganIdx = ((effectiveYear - 4) % 10 + 10) % 10;
   const zhiIdx = ((effectiveYear - 4) % 12 + 12) % 12;
   return { gan: GAN[ganIdx], zhi: ZHI[zhiIdx], ganIndex: ganIdx, zhiIndex: zhiIdx };
 }
 
 /** 月柱：五虎遁（甲己之年丙作首...） */
-export function getMonthPillar(yearGanIndex: number, month: number, day: number): BaziPillar {
-  const zhiIdx = getMonthBranchIndex(month, day);
+export function getMonthPillar(yearGanIndex: number, year: number, month: number, day: number): BaziPillar {
+  const zhiIdx = getMonthBranchIndex(year, month, day);
+  const ganIdx = (yearGanIndex % 5 * 2 + 2 + (zhiIdx - 2 + 12) % 12) % 10;
+  return { gan: GAN[ganIdx], zhi: ZHI[zhiIdx], ganIndex: ganIdx, zhiIndex: zhiIdx };
+}
+
+/** 月柱（时刻级） */
+export function getMonthPillarExact(
+  yearGanIndex: number, year: number, month: number, day: number,
+  hour: number = 12, minute: number = 0,
+): BaziPillar {
+  const zhiIdx = getMonthBranchIndexExact(year, month, day, hour, minute);
   const ganIdx = (yearGanIndex % 5 * 2 + 2 + (zhiIdx - 2 + 12) % 12) % 10;
   return { gan: GAN[ganIdx], zhi: ZHI[zhiIdx], ganIndex: ganIdx, zhiIndex: zhiIdx };
 }
