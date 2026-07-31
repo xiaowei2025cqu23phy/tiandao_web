@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
 
 # 注意：本应用使用根路径资源（/manifest.webmanifest、/sw.js、/icons/...），
