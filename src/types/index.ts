@@ -67,7 +67,7 @@ export interface AIConfig {
   apiKey: string;
 }
 
-export type TabType = 'iching' | 'bazi' | 'fortune' | 'festival' | 'name' | 'dream' | 'cosmos';
+export type TabType = 'iching' | 'bazi' | 'fortune' | 'festival' | 'marriage' | 'name' | 'dream' | 'cosmos';
 export type DivinationMethod = 'coin' | 'rice' | 'number' | 'time' | 'yarrow';
 
 // ═══ Bazi types ═══

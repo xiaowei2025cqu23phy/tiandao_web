@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Settings, History, BookOpen, Calendar, User, Moon, Compass, Sun } from 'lucide-react';
+import { Sparkles, Settings, History, BookOpen, Calendar, User, Moon, Compass, Sun, HeartHandshake } from 'lucide-react';
 import type { TabType } from '../../types';
 
 interface HeaderProps {
@@ -45,6 +45,7 @@ export default function Header({ activeTab, onTabChange, onOpenSettings, onToggl
               { id: 'bazi' as TabType, icon: <Sparkles size={13} />, label: '八字' },
               { id: 'fortune' as TabType, icon: <Calendar size={13} />, label: '黄历' },
               { id: 'festival' as TabType, icon: <Sun size={13} />, label: '岁时' },
+              { id: 'marriage' as TabType, icon: <HeartHandshake size={13} />, label: '合婚' },
               { id: 'name' as TabType, icon: <User size={13} />, label: '姓名' },
               { id: 'dream' as TabType, icon: <Moon size={13} />, label: '解梦' },
               { id: 'cosmos' as TabType, icon: <Compass size={13} />, label: '宇宙论' },

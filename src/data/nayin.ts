@@ -79,16 +79,21 @@ export function augmentHexagram(h: Hexagram): Hexagram {
   }
   const guestLine = hostLine <= 3 ? hostLine + GUEST_OFFSET : hostLine - GUEST_OFFSET;
 
-  // 纳甲
-  const tri = h.lowerTrigram;
-  // 内卦（初-三）用第一干，外卦（四-上）乾坤改用第二干（壬/癸）
-  const gans = TIAN_GAN[tri] || ['甲'];
-  const zhiArr = DI_ZHI_PURE[tri] || DI_ZHI_PURE['天'];
+  // 纳甲：内卦（初-三）用下卦干支，外卦（四-上）用上卦干支（乾坤外卦用壬/癸）
+  const innerGans = TIAN_GAN[h.lowerTrigram] || ['甲'];
+  const innerZhi = DI_ZHI_PURE[h.lowerTrigram] || DI_ZHI_PURE['天'];
+  const outerGans = TIAN_GAN[h.upperTrigram] || ['甲'];
+  const outerZhi = DI_ZHI_PURE[h.upperTrigram] || DI_ZHI_PURE['天'];
 
   const yaoLines = h.yaoLines.map((yl, i) => {
-    const gan = gans[Math.min(i >= 3 ? 1 : 0, gans.length - 1)] || gans[0] || '甲';
-    const nayin = `${gan}${zhiArr[i]}`;
-    const sixR = sixRelative(element, zhiArr[i]);
+    const outer = i >= 3;
+    const gans = outer ? outerGans : innerGans;
+    const zhiArr = outer ? outerZhi : innerZhi;
+    // 纳支表本身为「内三支 + 外三支」六位，外卦直接取第 i 位
+    const zhi = zhiArr[i];
+    const gan = gans[Math.min(outer ? 1 : 0, gans.length - 1)] || gans[0] || '甲';
+    const nayin = `${gan}${zhi}`;
+    const sixR = sixRelative(element, zhi);
     return {
       ...yl,
       nayin,

@@ -5,6 +5,7 @@ import IChingDivination from './components/IChing/IChingDivination';
 import BaziCalculator from './components/Bazi/BaziCalculator';
 import DailyFortune from './components/Fortune/DailyFortune';
 import SeasonalCalendar from './components/Fortune/SeasonalCalendar';
+import MarriageCalculator from './components/Marriage/MarriageCalculator';
 import NameAnalysisPage from './components/NameAnalysis/NameAnalysis';
 import DreamInterpreter from './components/Dream/DreamInterpreter';
 import CosmologyVisuals from './components/Fortune/CosmologyVisuals';
@@ -82,6 +83,11 @@ function App() {
             {activeTab === 'festival' && (
               <motion.div key="festival" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
                 <SeasonalCalendar />
+              </motion.div>
+            )}
+            {activeTab === 'marriage' && (
+              <motion.div key="marriage" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
+                <MarriageCalculator />
               </motion.div>
             )}
             {activeTab === 'name' && (

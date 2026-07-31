@@ -43,6 +43,18 @@ describe('纳甲 / 世应 / 六亲', () => {
     expect(a.yaoLines.map(y => y.sixRelative)).toEqual(['子孙', '官鬼', '妻财', '父母', '官鬼', '兄弟']);
   });
 
+  it('混合卦外卦用上卦纳甲：天风姤（上乾下巽）', () => {
+    const a = augmentHexagram(getHexagramByNumber(44)!);
+    expect(a.yaoLines.map(y => y.nayin)).toEqual(['辛丑', '辛亥', '辛酉', '壬午', '壬申', '壬戌']);
+  });
+
+  it('混合卦外卦用上卦纳甲：泽地萃（上兑下坤）与山水蒙（上艮下坎）', () => {
+    const cui = augmentHexagram(getHexagramByNumber(45)!);
+    expect(cui.yaoLines.map(y => y.nayin)).toEqual(['乙未', '乙巳', '乙卯', '丁亥', '丁酉', '丁未']);
+    const meng = augmentHexagram(getHexagramByNumber(4)!);
+    expect(meng.yaoLines.map(y => y.nayin)).toEqual(['戊寅', '戊辰', '戊午', '丙戌', '丙子', '丙寅']);
+  });
+
   it('世应在同卦中相隔三位（互错位校验）', () => {
     for (const h of hexagrams) {
       const a = augmentHexagram(h);

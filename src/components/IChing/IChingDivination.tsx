@@ -12,6 +12,8 @@ import HexagramDisplay from './HexagramDisplay';
 import WuXingCycle from './WuXingCycle';
 import TypingText from '../Common/TypingText';
 import { numberCast, timeCast } from '../../data/castMethods';
+import { buildLiuYaoChart, liuShenStartName } from '../../data/liuyao';
+import { getDayPillar, getMonthBranchIndex, ZHI } from '../../data/ganzhi';
 
 interface Props { aiConfig: AIConfig; onSave: (r: DivinationResult) => void; selectedRecord: DivinationResult | null; }
 
@@ -265,6 +267,65 @@ export default function IChingDivination({ aiConfig, onSave, selectedRecord }: P
           {/* Main Hexagram */}
           <HexagramDisplay hexagram={result.hexagram} lines={result.originalLines} label="本卦"
             changedLines={result.changedLines} />
+
+          {/* 六爻纳甲盘 */}
+          <div className="p-6 rounded-2xl bg-gradient-to-b from-imperial-red/[0.05] to-ink-black/50 border border-imperial-red/20">
+            <h3 className="font-calligraphy text-xl text-amber-100 text-center mb-2">六爻纳甲盘</h3>
+            {(() => {
+              const d = new Date(result.timestamp);
+              const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+              const dp = getDayPillar(y, m, day);
+              const rows = buildLiuYaoChart(result.hexagram, dp.ganIndex);
+              const h = augmentHexagram(result.hexagram);
+              const monthZhi = ZHI[getMonthBranchIndex(y, m, day)];
+              const shenColor: Record<string, string> = {
+                '青龙': 'text-emerald-400', '朱雀': 'text-red-400', '勾陈': 'text-amber-400',
+                '腾蛇': 'text-purple-400', '白虎': 'text-gray-300', '玄武': 'text-blue-400',
+              };
+              return (
+                <div>
+                  <p className="text-amber-400/50 text-xs text-center mb-4">
+                    {h.palace}{h.element} · {dp.gan}{dp.zhi}日 · {monthZhi}月 · 六神起于{liuShenStartName(dp.ganIndex)}
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-amber-400/40 text-xs">
+                          <th className="py-2 font-normal text-left">爻位</th>
+                          <th className="py-2 font-normal text-left">六神</th>
+                          <th className="py-2 font-normal text-left">纳甲</th>
+                          <th className="py-2 font-normal text-left">六亲</th>
+                          <th className="py-2 font-normal text-left">世应</th>
+                          <th className="py-2 font-normal text-right">伏神</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...rows].reverse().map(r => (
+                          <tr key={r.position} className="border-t border-imperial-red/10">
+                            <td className="py-2 text-amber-400/40 text-xs">
+                              {['初', '二', '三', '四', '五', '上'][r.position - 1]}爻
+                            </td>
+                            <td className={`py-2 text-xs font-medium ${shenColor[r.liuShen] || 'text-amber-400/60'}`}>
+                              {r.liuShen}
+                            </td>
+                            <td className="py-2 text-amber-100 font-calligraphy">{r.nayin}</td>
+                            <td className="py-2 text-emerald-400/70">{r.sixRelative}</td>
+                            <td className="py-2 text-xs">
+                              {r.isHost && <span className="text-imperial-red font-bold">世</span>}
+                              {r.isGuest && <span className="text-amber-300 font-bold">应</span>}
+                            </td>
+                            <td className="py-2 text-[10px] text-amber-400/40 text-right">
+                              {r.fuShen ? `伏 ${r.fuShen.nayin} ${r.fuShen.sixRelative}` : ''}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
 
           {/* 体用生克判断 */}
           {result && (
