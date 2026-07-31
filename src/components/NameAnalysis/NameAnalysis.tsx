@@ -30,8 +30,8 @@ export default function NameAnalysisPage() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-amber-300 text-sm mb-2 block">姓氏</label>
-            <input value={surname} onChange={e => setSurname(e.target.value)} maxLength={1}
-              placeholder="张"
+            <input value={surname} onChange={e => setSurname(e.target.value)} maxLength={2}
+              placeholder="张 / 欧阳"
               className="w-full px-4 py-2.5 bg-ink-black/60 border border-imperial-red/20 rounded-xl text-amber-200 text-center text-lg font-calligraphy focus:outline-none focus:border-imperial-red/50" />
           </div>
           <div>
@@ -61,6 +61,12 @@ export default function NameAnalysisPage() {
             </p>
           </div>
 
+          {result.warning && (
+            <div className="px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300/90 text-xs text-center">
+              ⚠️ {result.warning}
+            </div>
+          )}
+
           {/* Five Grids */}
           <div className="p-4 rounded-2xl bg-gradient-to-b from-imperial-red/[0.05] to-ink-black/50 border border-imperial-red/20">
             <h3 className="flex items-center gap-2 text-amber-200 text-sm font-medium mb-3">
@@ -75,12 +81,47 @@ export default function NameAnalysisPage() {
                     <div className="text-amber-400/40 text-[10px]">{g.wuxing}</div>
                   </div>
                   <div className="flex-1">
-                    <div className="text-amber-200 text-lg font-bold">{g.value}</div>
-                    <div className="text-amber-400/50 text-xs leading-relaxed">{g.interpretation}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-200 text-lg font-bold">{g.value}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                        g.fortune === '吉'
+                          ? 'text-green-300 bg-green-500/10 border-green-500/25'
+                          : g.fortune === '半吉'
+                            ? 'text-amber-300 bg-amber-500/10 border-amber-500/25'
+                            : 'text-red-300 bg-red-500/10 border-red-500/25'
+                      }`}>
+                        {g.fortune}
+                      </span>
+                    </div>
+                    <div className="text-amber-400/50 text-xs leading-relaxed">{g.meaning}</div>
                   </div>
                 </motion.div>
               ))}
             </div>
+          </div>
+
+          {/* San Cai */}
+          <div className="p-4 rounded-2xl bg-gradient-to-b from-imperial-red/[0.05] to-ink-black/50 border border-imperial-red/20">
+            <h3 className="flex items-center gap-2 text-amber-200 text-sm font-medium mb-3">
+              <Sparkles size={16} /> 三才配置
+            </h3>
+            <div className="flex items-center justify-center gap-3 text-sm">
+              <div className="text-center">
+                <p className="text-amber-400/40 text-[10px]">天格</p>
+                <p className="text-amber-200">{result.sanCai.tian}</p>
+              </div>
+              <span className="text-amber-400/40 text-xs">{result.sanCai.relations[0]}</span>
+              <div className="text-center">
+                <p className="text-amber-400/40 text-[10px]">人格</p>
+                <p className="text-amber-200">{result.sanCai.ren}</p>
+              </div>
+              <span className="text-amber-400/40 text-xs">{result.sanCai.relations[1]}</span>
+              <div className="text-center">
+                <p className="text-amber-400/40 text-[10px]">地格</p>
+                <p className="text-amber-200">{result.sanCai.di}</p>
+              </div>
+            </div>
+            <p className="text-amber-400/50 text-xs text-center mt-3 leading-relaxed">{result.sanCai.comment}</p>
           </div>
 
           {/* Summary */}

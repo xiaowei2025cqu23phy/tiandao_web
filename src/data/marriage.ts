@@ -112,5 +112,13 @@ export function zodiacMarriage(zodiacA: string, zodiacB: string): MarriageResult
   };
 }
 
+/** 地支关系：六合 / 三合 / 六冲 / ''（供择日等复用） */
+export function zhiRelation(a: number, b: number): '' | '六合' | '三合' | '六冲' {
+  if (inPair(LIUHE, a, b)) return '六合';
+  if (inGroup(SANHE, a, b)) return '三合';
+  if (a === (b + 6) % 12 || b === (a + 6) % 12) return '六冲';
+  return '';
+}
+
 /** 六合最佳配对（供参考展示） */
 export const LIUHE_PAIRS = LIUHE.map(([a, b]) => `${ZODIAC[a]}${ZODIAC[b]}`);

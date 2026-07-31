@@ -259,23 +259,59 @@ function wuxingOf(n: number): string {
   return WUXING_MAP[n % 10] || '土';
 }
 
-function fiveGridInterpret(grid: string, score: number): string {
-  const comments: Record<string, [number, string]> = {
-    '天': [score >= 15 ? 85 : 60, '主运，代表祖辈福荫、早年运势。' + (score >= 15 ? '根基稳固，家运昌隆。' : '早年多劳，需后天努力。')],
-    '人': [score >= 14 ? 90 : 55, '主运，代表自身人格、中年运势。' + (score >= 14 ? '为人正直，事业顺遂。' : '需修身立德，戒骄戒躁。')],
-    '地': [score >= 14 ? 80 : 55, '前运，代表子女运、晚年福报。' + (score >= 14 ? '晚景安逸，子孝孙贤。' : '晚年需注意健康，宜养生。')],
-    '外': [score >= 12 ? 75 : 50, '副运，代表社交能力、贵人缘。' + (score >= 12 ? '人缘佳，贵人相助。' : '宜谨慎交友，防小人。')],
-    '总': [score >= 30 ? 88 : 60, '后运，代表人生总成就。' + (score >= 30 ? '一生顺遂，功成名就。' : '人生起伏，需持恒心。')],
-  };
-  const [s, c] = comments[grid] || [50, ''];
-  return `评分${s} · ${c}`;
+// 81 数理吉凶（姓名学通行表）：[吉凶, 释义]
+const NUMEROLOGY: Array<[string, string]> = [
+  ['吉', '万物开泰，吉祥如意'], ['凶', '混沌未定，进退保守'], ['吉', '进取如意，名利双收'], ['凶', '凶变不安，谨慎防危'],
+  ['吉', '福禄长寿，名利兼得'], ['吉', '安稳余庆，德泽四方'], ['吉', '刚毅果断，勇往直前'], ['吉', '意志坚刚，勤勉发展'],
+  ['凶', '兴尽凶始，防危虑困'], ['凶', '万事终局，暗弱无力'], ['吉', '草木逢春，稳健着实'], ['凶', '薄弱无力，谋事难成'],
+  ['吉', '智略超群，博学多才'], ['凶', '沦落天涯，失意烦闷'], ['吉', '福寿圆满，富贵荣誉'], ['吉', '贵人相助，财帛丰盈'],
+  ['半吉', '突破万难，刚柔兼备'], ['吉', '有志竟成，内外有德'], ['凶', '风云蔽日，辛苦重来'], ['凶', '非业破运，灾祸相随'],
+  ['吉', '明月中天，光风霁月'], ['凶', '秋草逢霜，怀才不遇'], ['吉', '旭日东升，壮丽壮观'], ['吉', '家门余庆，金钱丰盈'],
+  ['吉', '资性英敏，刚毅果断'], ['半吉', '变怪奇异，波澜重叠'], ['凶', '一成一败，先甜后苦'], ['凶', '豪气生离，行踪无定'],
+  ['吉', '智谋兼备，欲望难足'], ['半吉', '一成一败，浮沉不定'], ['吉', '智勇得志，可得名利'], ['吉', '侥幸多望，贵人得助'],
+  ['吉', '家门隆昌，才德开展'], ['凶', '破家亡身，见识短小'], ['吉', '温和平静，智达通畅'], ['凶', '波澜重叠，常陷穷困'],
+  ['吉', '权威显达，吉人天相'], ['半吉', '磨铁成针，刻意经营'], ['吉', '富贵荣华，财帛丰盈'], ['凶', '谨慎保安，豪胆迈进'],
+  ['吉', '德望高大，万事如意'], ['凶', '事业不专，多才多艺'], ['凶', '雨夜之花，外祥内苦'], ['凶', '事难遂愿，逆耳忠言'],
+  ['吉', '顺风扬帆，万事如意'], ['凶', '载宝沉舟，防宜谨慎'], ['吉', '花开逢春，可享天赋'], ['吉', '德智兼备，鹤立鸡群'],
+  ['凶', '吉凶难分，一成一败'], ['半吉', '吉凶互见，一成一败'], ['半吉', '盛衰交加，谋事有成'], ['吉', '先见之明，多才多艺'],
+  ['凶', '忧愁困苦，先盛后衰'], ['凶', '多难悲运，难望成功'], ['半吉', '外美内苦，凶吉相伴'], ['凶', '历尽艰辛，事与愿违'],
+  ['吉', '寒雪青松，必有后福'], ['半吉', '先苦后甘，晚景荣昌'], ['凶', '遇事猜疑，难望成事'], ['凶', '黑暗无光，摇摇欲坠'],
+  ['吉', '牡丹芙蓉，花开富贵'], ['凶', '衰败之象，内外不和'], ['吉', '富贵荣华，身心安泰'], ['凶', '骨肉分离，孤独悲愁'],
+  ['吉', '富贵长寿，家运隆昌'], ['凶', '进退失据，内外不和'], ['吉', '天赋幸运，万事如意'], ['吉', '顺风吹帆，可望成功'],
+  ['凶', '动摇不安，常陷逆境'], ['凶', '惨淡经营，难免贫困'], ['半吉', '劳而无功，福祸参半'], ['凶', '先苦后甜，劳而无功'],
+  ['半吉', '安乐自来，自然吉祥'], ['凶', '残菊经霜，秋叶落寞'], ['半吉', '退守可保吉，进则凶'], ['凶', '倾覆离散，劳而无功'],
+  ['半吉', '先苦后甘，光明在望'], ['半吉', '晚境荣华，家庭幸福'], ['凶', '云头望月，身疲力尽'], ['凶', '辛苦不绝，早入隐遁'],
+  ['吉', '还元复始，万象更新'],
+];
+
+/** 81 数理吉凶（>81 按 81 循环回绕） */
+function numerologyInfo(n: number): { fortune: string; meaning: string } {
+  const v = ((Math.max(1, Math.abs(n)) - 1) % 81) + 1;
+  const [fortune, meaning] = NUMEROLOGY[v - 1];
+  return { fortune, meaning };
+}
+
+const FORTUNE_SCORE: Record<string, number> = { '吉': 90, '半吉': 72, '凶': 48 };
+
+const WX_SHENG: Record<string, string> = { '木': '火', '火': '土', '土': '金', '金': '水', '水': '木' };
+
+function wxRelation(a: string, b: string): '相生' | '相克' | '同类' {
+  if (a === b) return '同类';
+  if (WX_SHENG[a] === b || WX_SHENG[b] === a) return '相生';
+  return '相克';
 }
 
 export interface NameAnalysis {
   surname: string; given: string;
   strokes: { surname: number; given1: number; given2: number };
-  grids: { name: string; value: number; wuxing: string; interpretation: string }[];
+  grids: { name: string; value: number; wuxing: string; fortune: string; meaning: string }[];
+  sanCai: {
+    tian: string; ren: string; di: string;
+    relations: [string, string];
+    comment: string;
+  };
   total: { score: number; comment: string; lucky: string[]; careers: string[] };
+  warning?: string;
 }
 
 export function analyzeName(surname: string, given: string): NameAnalysis {
@@ -283,22 +319,41 @@ export function analyzeName(surname: string, given: string): NameAnalysis {
   const g1 = strokesOf(given, 0);
   const g2 = given.length > 1 ? strokesOf(given, 1) : 0;
 
-  const tian = s1 + 1;          // 天格
-  const ren = s1 + g1;          // 人格
-  const di = g1 + g2;           // 地格
-  const wai = g2 + 1;           // 外格
-  const zong = s1 + g1 + g2;    // 总格
+  // 支持单/复姓：天格（复姓两字之和，单姓 +1），外格（复姓按姓首+名末）
+  const doubleSurname = surname.length > 1;
+  const s2 = doubleSurname ? strokesOf(surname, 1) : 0;
+  const tian = doubleSurname ? s1 + s2 : s1 + 1;
+  const ren = doubleSurname ? s2 + g1 : s1 + g1;   // 人格：姓末 + 名首
+  const di = g2 > 0 ? g1 + g2 : g1 + 1;            // 地格：单名 +1
+  const wai = doubleSurname
+    ? (g2 > 0 ? s1 + g2 : s1 + 1)                  // 外格：复姓 = 姓首 + 名末（单名 +1）
+    : (g2 > 0 ? g2 + 1 : 2);                       // 外格：单姓单名 = 2
+  const zong = s1 + s2 + g1 + g2;
 
   const grids = [
-    { name: '天格', value: tian, wuxing: wuxingOf(tian), interpretation: fiveGridInterpret('天', tian) },
-    { name: '人格', value: ren, wuxing: wuxingOf(ren), interpretation: fiveGridInterpret('人', ren) },
-    { name: '地格', value: di, wuxing: wuxingOf(di), interpretation: fiveGridInterpret('地', di) },
-    { name: '外格', value: wai, wuxing: wuxingOf(wai), interpretation: fiveGridInterpret('外', wai) },
-    { name: '总格', value: zong, wuxing: wuxingOf(zong), interpretation: fiveGridInterpret('总', zong) },
-  ];
+    { name: '天格', value: tian },
+    { name: '人格', value: ren },
+    { name: '地格', value: di },
+    { name: '外格', value: wai },
+    { name: '总格', value: zong },
+  ].map(g => {
+    const info = numerologyInfo(g.value);
+    return { ...g, wuxing: wuxingOf(g.value), fortune: info.fortune, meaning: info.meaning };
+  });
 
-  const scores = [tian > 15 ? 85 : 60, ren > 14 ? 90 : 55, di > 14 ? 80 : 55, wai > 12 ? 75 : 50, zong > 30 ? 88 : 60];
-  const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  // 三才：天-人-地 五行生克
+  const tianWx = grids[0].wuxing;
+  const renWxGrid = grids[1].wuxing;
+  const diWx = grids[2].wuxing;
+  const tr = wxRelation(tianWx, renWxGrid);
+  const rd = wxRelation(renWxGrid, diWx);
+  const sanBonus = (tr === '相生' ? 8 : tr === '同类' ? 4 : -8) + (rd === '相生' ? 8 : rd === '同类' ? 4 : -8);
+  const sanCaiComment = `天人${tr}、人地${rd}：${tr === '相生' && rd === '相生' ? '三才通顺，根基稳固，运势平顺。'
+    : tr === '相克' || rd === '相克' ? '有相克之象，行事多阻，宜后天调补。'
+    : '有生有合，总体平稳，小有波澜。'}`;
+
+  const avg = Math.round(grids.reduce((sum, g) => sum + (FORTUNE_SCORE[g.fortune] || 60), 0) / grids.length);
+  const score = Math.max(0, Math.min(100, avg + sanBonus));
 
   const renWx = wuxingOf(ren);
   const careerMap: Record<string, string[]> = {
@@ -310,11 +365,28 @@ export function analyzeName(surname: string, given: string): NameAnalysis {
   };
 
   const total = {
-    score: avg,
-    comment: avg >= 85 ? '大吉大利，万事亨通' : avg >= 75 ? '吉中带顺，稳步发展' : avg >= 60 ? '中平之格，勤能补拙' : '平平淡淡，知足常乐',
+    score,
+    comment: score >= 85 ? '大吉大利，万事亨通' : score >= 75 ? '吉中带顺，稳步发展' : score >= 60 ? '中平之格，勤能补拙' : '平平淡淡，知足常乐',
     lucky: ['红色','金色','白色'].slice(0, 2),
     careers: careerMap[renWx] || ['自由职业','个体经营'],
   };
 
-  return { surname, given, strokes: { surname: s1, given1: g1, given2: g2 }, grids, total };
+  const unknown = [surname[0], surname[1], given[0], given[1]].filter(Boolean)
+    .filter(ch => !CHAR_STROKES[ch]);
+  const warning = unknown.length
+    ? `「${unknown.join('」「')}」笔画未收录，相关数理按估算值，结果仅供参考`
+    : undefined;
+
+  return {
+    surname, given,
+    strokes: { surname: s1, given1: g1, given2: g2 },
+    grids,
+    sanCai: {
+      tian: tianWx, ren: renWxGrid, di: diWx,
+      relations: [tr, rd],
+      comment: sanCaiComment,
+    },
+    total,
+    warning,
+  };
 }
