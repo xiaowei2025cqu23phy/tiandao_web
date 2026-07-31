@@ -81,7 +81,11 @@ export default function IChingDivination({ aiConfig, onSave, selectedRecord }: P
   // ── Number divination ──────────────────────────
   const handleNumberSubmit = () => {
     const a = parseInt(num1) || 0, b = parseInt(num2) || 0, c = parseInt(num3) || 0;
-    if (!a || !b || !c) return;
+    if (!a || !b || !c) {
+      setCastError('请输入三个 1-99 的数字（0 不能作为卦数）');
+      return;
+    }
+    setCastError('');
     buildResult(numberCast(a, b, c), 'number');
   };
 

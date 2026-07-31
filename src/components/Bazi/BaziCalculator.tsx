@@ -13,16 +13,34 @@ export default function BaziCalculator() {
   const [gender, setGender] = useState('男');
   const [result, setResult] = useState<BaziResult | null>(null);
   const [wuxing, setWuxing] = useState<WuxingAnalysis | null>(null);
+  const [formError, setFormError] = useState('');
 
   const handleCalculate = () => {
     if (!birthDate) return;
+    setFormError('');
     const [y, m, d] = birthDate.split('-').map(Number);
     if (!y || !m || !d) return;
 
-    const bazi = calculateBazi(y, m, d, birthHour, gender, { minute: birthMinute, longitude });
-    const wx = analyzeWuxing(bazi);
-    setResult(bazi);
-    setWuxing(wx);
+    // 农历查表支持 1900-01-31 ~ 2100 年内
+    if (y < 1900 || y > 2100) {
+      setFormError('仅支持 1900-01-31 至 2100-12-31 之间的出生日期');
+      return;
+    }
+    if (y === 1900 && m === 1 && d < 31) {
+      setFormError('1900 年需从 1 月 31 日（正月初一）起算');
+      return;
+    }
+
+    try {
+      const bazi = calculateBazi(y, m, d, birthHour, gender, { minute: birthMinute, longitude });
+      const wx = analyzeWuxing(bazi);
+      setResult(bazi);
+      setWuxing(wx);
+    } catch (err: unknown) {
+      setResult(null);
+      setWuxing(null);
+      setFormError(err instanceof Error ? err.message : '推算失败，请检查输入');
+    }
   };
 
   return (
@@ -58,7 +76,7 @@ export default function BaziCalculator() {
           <input
             type="date"
             value={birthDate}
-            onChange={e => setBirthDate(e.target.value)}
+            onChange={e => { setBirthDate(e.target.value); setFormError(''); }}
             className="w-full px-4 py-2.5 bg-ink-black/60 border border-imperial-red/20 rounded-xl text-amber-200 text-sm focus:outline-none focus:border-imperial-red/50 transition-colors"
             placeholder="2000-01-01"
           />
@@ -150,6 +168,12 @@ export default function BaziCalculator() {
             <p className="text-amber-400/30 text-[11px] mt-1">默认 120°（东八区标准时），如北京 116.4°</p>
           </div>
         </div>
+
+        {formError && (
+          <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm text-center">
+            ⚠️ {formError}
+          </div>
+        )}
 
         <motion.button
           className="w-full py-3 rounded-xl bg-gradient-to-r from-imperial-red/80 to-imperial-red/60 text-amber-100 font-medium text-sm hover:from-imperial-red hover:to-imperial-red/80 transition-all border border-imperial-red/30 disabled:opacity-40 disabled:cursor-not-allowed"

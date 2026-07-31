@@ -2,6 +2,18 @@ import { motion } from 'framer-motion';
 import { Sparkles, Settings, History, BookOpen, Calendar, User, Moon, Compass, Sun, HeartHandshake, CalendarCheck } from 'lucide-react';
 import type { TabType } from '../../types';
 
+const TABS: { id: TabType; icon: React.ReactNode; label: string }[] = [
+  { id: 'iching', icon: <BookOpen size={13} />, label: '易经' },
+  { id: 'bazi', icon: <Sparkles size={13} />, label: '八字' },
+  { id: 'fortune', icon: <Calendar size={13} />, label: '黄历' },
+  { id: 'festival', icon: <Sun size={13} />, label: '岁时' },
+  { id: 'marriage', icon: <HeartHandshake size={13} />, label: '合婚' },
+  { id: 'zeria', icon: <CalendarCheck size={13} />, label: '择日' },
+  { id: 'name', icon: <User size={13} />, label: '姓名' },
+  { id: 'dream', icon: <Moon size={13} />, label: '解梦' },
+  { id: 'cosmos', icon: <Compass size={13} />, label: '宇宙论' },
+];
+
 interface HeaderProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
@@ -38,25 +50,16 @@ export default function Header({ activeTab, onTabChange, onOpenSettings, onToggl
             </div>
           </motion.div>
 
-          {/* Tabs */}
-          <div className="hidden md:flex items-center gap-1 bg-imperial-red/5 rounded-full p-1 border border-imperial-red/10">
-            {[
-              { id: 'iching' as TabType, icon: <BookOpen size={13} />, label: '易经' },
-              { id: 'bazi' as TabType, icon: <Sparkles size={13} />, label: '八字' },
-              { id: 'fortune' as TabType, icon: <Calendar size={13} />, label: '黄历' },
-              { id: 'festival' as TabType, icon: <Sun size={13} />, label: '岁时' },
-              { id: 'marriage' as TabType, icon: <HeartHandshake size={13} />, label: '合婚' },
-              { id: 'zeria' as TabType, icon: <CalendarCheck size={13} />, label: '择日' },
-              { id: 'name' as TabType, icon: <User size={13} />, label: '姓名' },
-              { id: 'dream' as TabType, icon: <Moon size={13} />, label: '解梦' },
-              { id: 'cosmos' as TabType, icon: <Compass size={13} />, label: '宇宙论' },
-            ].map(({ id, icon, label }) => (
+          {/* Tabs (desktop) */}
+          <div className="hidden md:flex items-center gap-1 bg-imperial-red/5 rounded-full p-1 border border-imperial-red/10 overflow-x-auto max-w-full">
+            {TABS.map(({ id, icon, label }) => (
               <TabButton
                 key={id}
                 active={activeTab === id}
                 onClick={() => onTabChange(id)}
                 icon={icon}
                 label={label}
+                layoutId="tab-bg"
               />
             ))}
           </div>
@@ -67,16 +70,38 @@ export default function Header({ activeTab, onTabChange, onOpenSettings, onToggl
             <IconButton onClick={onOpenSettings} icon={<Settings size={18} />} label="设置" />
           </div>
         </div>
+
+        {/* Tabs (mobile) */}
+        <div className="md:hidden flex items-center gap-1 overflow-x-auto px-3 pb-2 pt-1 -mx-1">
+          {TABS.map(({ id, icon, label }) => (
+            <TabButton
+              key={id}
+              active={activeTab === id}
+              onClick={() => onTabChange(id)}
+              icon={icon}
+              label={label}
+              layoutId="tab-bg-mobile"
+              compact
+            />
+          ))}
+        </div>
       </div>
     </motion.header>
   );
 }
 
-function TabButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+function TabButton({
+  active, onClick, icon, label, layoutId, compact,
+}: {
+  active: boolean; onClick: () => void; icon: React.ReactNode; label: string;
+  layoutId: string; compact?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
-      className={`relative flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+      className={`relative shrink-0 flex items-center gap-2 rounded-full font-medium transition-all duration-300 ${
+        compact ? 'px-3.5 py-1.5 text-xs' : 'px-5 py-2 text-sm'
+      } ${
         active
           ? 'text-amber-100'
           : 'text-amber-400/50 hover:text-amber-400/80'
@@ -85,7 +110,7 @@ function TabButton({ active, onClick, icon, label }: { active: boolean; onClick:
       {active && (
         <motion.div
           className="absolute inset-0 rounded-full bg-gradient-to-r from-imperial-red/80 to-imperial-red/60"
-          layoutId="tab-bg"
+          layoutId={layoutId}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         />
       )}
