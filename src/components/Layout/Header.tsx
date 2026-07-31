@@ -1,0 +1,107 @@
+import { motion } from 'framer-motion';
+import { Sparkles, Settings, History, BookOpen, Calendar, User, Moon, Compass } from 'lucide-react';
+import type { TabType } from '../../types';
+
+interface HeaderProps {
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
+  onOpenSettings: () => void;
+  onToggleHistory: () => void;
+}
+
+export default function Header({ activeTab, onTabChange, onOpenSettings, onToggleHistory }: HeaderProps) {
+  return (
+    <motion.header
+      className="relative z-10 border-b border-imperial-red/20 bg-gradient-to-b from-ink-black/95 to-ink-black/80 backdrop-blur-sm"
+      initial={{ y: -60, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
+    >
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <motion.div
+            className="flex items-center gap-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-imperial-red via-imperial-red/80 to-amber-700 flex items-center justify-center">
+                <Sparkles size={18} className="text-amber-100" />
+              </div>
+              <div className="absolute inset-0 rounded-full bg-imperial-red/20 animate-ping-slow" />
+            </div>
+            <div>
+              <h1 className="font-calligraphy text-2xl text-amber-100 leading-none">天机</h1>
+              <p className="text-[10px] text-amber-400/60 tracking-[0.3em]">TIAN JI</p>
+            </div>
+          </motion.div>
+
+          {/* Tabs */}
+          <div className="hidden md:flex items-center gap-1 bg-imperial-red/5 rounded-full p-1 border border-imperial-red/10">
+            {[
+              { id: 'iching' as TabType, icon: <BookOpen size={13} />, label: '易经' },
+              { id: 'bazi' as TabType, icon: <Sparkles size={13} />, label: '八字' },
+              { id: 'fortune' as TabType, icon: <Calendar size={13} />, label: '黄历' },
+              { id: 'name' as TabType, icon: <User size={13} />, label: '姓名' },
+              { id: 'dream' as TabType, icon: <Moon size={13} />, label: '解梦' },
+              { id: 'cosmos' as TabType, icon: <Compass size={13} />, label: '宇宙论' },
+            ].map(({ id, icon, label }) => (
+              <TabButton
+                key={id}
+                active={activeTab === id}
+                onClick={() => onTabChange(id)}
+                icon={icon}
+                label={label}
+              />
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <IconButton onClick={onToggleHistory} icon={<History size={18} />} label="历史记录" />
+            <IconButton onClick={onOpenSettings} icon={<Settings size={18} />} label="设置" />
+          </div>
+        </div>
+      </div>
+    </motion.header>
+  );
+}
+
+function TabButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+        active
+          ? 'text-amber-100'
+          : 'text-amber-400/50 hover:text-amber-400/80'
+      }`}
+    >
+      {active && (
+        <motion.div
+          className="absolute inset-0 rounded-full bg-gradient-to-r from-imperial-red/80 to-imperial-red/60"
+          layoutId="tab-bg"
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        />
+      )}
+      <span className="relative z-10 flex items-center gap-2">
+        {icon}
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function IconButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className="p-2 rounded-lg text-amber-400/50 hover:text-amber-300 hover:bg-imperial-red/10 transition-all duration-200"
+      title={label}
+    >
+      {icon}
+    </button>
+  );
+}
